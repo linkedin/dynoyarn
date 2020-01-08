@@ -1,0 +1,17 @@
+Copyright 2020 LinkedIn Corporation
+All Rights Reserved.
+
+Licensed under the BSD 2-Clause License (the "License").
+See LICENSE in the project root for license information.
+
+========================================================
+
+This project uses the following third-party software:
+1. Shadow Plugin - https://github.com/johnrengelman/shadow/blob/master/LICENSE
+2. License Gradle Plugin - https://github.com/hierynomus/license-gradle-plugin/blob/master/LICENSE
+3. Gradle Nexus Staging Plugin - https://github.com/Codearte/gradle-nexus-staging-plugin/blob/master/LICENSE.txt
+4. Jackson Databind - https://github.com/FasterXML/jackson-databind/blob/2.13/LICENSE
+5. log4j - https://logging.apache.org/log4j/2.x/license.html
+6. Mockito - https://github.com/mockito/mockito/wiki/License
+7. testng - https://github.com/cbeust/testng/blob/master/LICENSE.txt
+8. Hadoop - https://github.com/apache/hadoop/blob/trunk/LICENSE.txt

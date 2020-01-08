@@ -1,0 +1,23 @@
+dependencies {
+  // Virtual dependencies for the simulated Hadoop cluster version.
+  // This is used by the submitter which submits to the fake cluster,
+  // so it should match the version provided via hadoop_binary_path (in theory).
+  compile deps."virtual-hadoop".'hadoop-common'
+  compile deps."virtual-hadoop".'hadoop-hdfs'
+  compile deps."virtual-hadoop".'hadoop-yarn-api'
+  compile deps."virtual-hadoop".'hadoop-yarn-client'
+  compile deps."virtual-hadoop".'hadoop-yarn-common'
+  compile deps."virtual-hadoop".'hadoop-yarn-server-nodemanager'
+  compile deps.external.'jackson-databind'
+  compile(project(':dynoyarn-common'))
+
+  testCompile deps.external.testng
+}
+
+configurations.all {
+  resolutionStrategy {
+    dependencySubstitution {
+      substitute module('com.linkedin.hadoop:hadoop-yarn-server-nodemanager') with module(deps."virtual-hadoop".'hadoop-yarn-server-nodemanager')
+    }
+  }
+}

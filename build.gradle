@@ -1,0 +1,219 @@
+apply plugin: "java"
+apply plugin: "eclipse"
+apply plugin: "idea"
+
+sourceCompatibility = 1.8
+
+buildscript {
+  repositories {
+    jcenter()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "com.github.jengelman.gradle.plugins:shadow:2.0.4"
+    classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
+    classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.20.0"
+    classpath "gradle.plugin.com.linkedin.hadoop-plugin:hadoop-plugin:0.13.3"
+  }
+}
+
+apply plugin: 'io.codearte.nexus-staging'
+
+def hadoopDriverVersion = "2.10.0"
+def hadoopVirtualVersion = "2.10.0"
+ext.playVersion = "2.6.20"
+ext.scalaVersionFull = System.getProperty("scala.binary.version", "2.11.12")
+ext.scalaVersion = scalaVersionFull
+if (ext.scalaVersionFull.split("\\.").length == 3) {
+  ext.scalaVersion = ext.scalaVersionFull.substring(0, ext.scalaVersionFull.lastIndexOf('.'))
+}
+
+ext.deps = [
+  external: [
+    "azkaban-common": "com.linkedin.azkaban:azkaban-common:3.58.0",
+    "jackson-databind": "com.fasterxml.jackson.core:jackson-databind:2.7.8",
+    "log4j": "log4j:log4j:1.2.17",
+    "mockito": "org.mockito:mockito-core:2.23.0",
+    "testng": "org.testng:testng:6.9.6"
+  ],
+  hadoop: [
+    "hadoop-common": "org.apache.hadoop:hadoop-common:${hadoopDriverVersion}",
+    "hadoop-hdfs": "org.apache.hadoop:hadoop-hdfs:${hadoopDriverVersion}",
+    "hadoop-yarn-api": "org.apache.hadoop:hadoop-yarn-api:${hadoopDriverVersion}",
+    "hadoop-yarn-client": "org.apache.hadoop:hadoop-yarn-client:${hadoopDriverVersion}",
+    "hadoop-yarn-common": "org.apache.hadoop:hadoop-yarn-common:${hadoopDriverVersion}",
+    "hadoop-yarn-server-nodemanager": "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopDriverVersion}",
+    "hadoop-yarn-server-resourcemanager": "org.apache.hadoop:hadoop-yarn-server-resourcemanager:${hadoopDriverVersion}"
+  ],
+  "virtual-hadoop": [
+    "hadoop-common": "org.apache.hadoop:hadoop-common:${hadoopVirtualVersion}",
+    "hadoop-hdfs": "org.apache.hadoop:hadoop-hdfs:${hadoopVirtualVersion}",
+    "hadoop-yarn-api": "org.apache.hadoop:hadoop-yarn-api:${hadoopVirtualVersion}",
+    "hadoop-yarn-client": "org.apache.hadoop:hadoop-yarn-client:${hadoopVirtualVersion}",
+    "hadoop-yarn-common": "org.apache.hadoop:hadoop-yarn-common:${hadoopVirtualVersion}",
+    "hadoop-yarn-server-nodemanager": "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVirtualVersion}",
+    "hadoop-yarn-server-tests": "org.apache.hadoop:hadoop-yarn-server-tests:${hadoopVirtualVersion}:tests"
+  ]
+]
+
+allprojects {
+  group = "com.linkedin.dynoyarn"
+  project.version = "0.0.1"
+}
+
+task sourcesJar(type: Jar) {
+  from sourceSets.main.allJava
+  classifier = 'sources'
+}
+
+task javadocJar(type: Jar) {
+  from javadoc
+  classifier = 'javadoc'
+}
+
+subprojects {
+  apply plugin: "license"
+  apply plugin: "java"
+  apply plugin: "checkstyle"
+  apply plugin: "findbugs"
+  apply plugin: "eclipse"
+  apply plugin: "idea"
+  apply plugin: "maven-publish"
+  apply plugin: "signing"
+
+  apply plugin: "com.linkedin.gradle.hadoop.HadoopPlugin"
+  apply from: "$rootDir/gradle/version-info.gradle"
+
+  if (project.name.equals("dynoyarn-driver") || project.name.equals("dynoyarn-generator")) {
+    apply plugin: 'com.github.johnrengelman.shadow'
+    shadowJar {
+      mergeServiceFiles()
+      // We need MiniYARNCluster to launch NodeManagers. hadoop-yarn-server-tests module
+      // which contains this class is not packaged as part of the hadoop tarball distribution.
+      // So we include it here, by including this module as the only hadoop compile dependency
+      // (the rest are compileOnly so they are not included in the dynoyarn-driver fat jar).
+
+      //includeRestrictedDependencies "org.apache.hadoop"
+      dependencies {
+        exclude(dependency('com.sun.jersey:'))
+        exclude(dependency('com.sun.jersey.contribs:'))
+      }
+      zip64 true
+    }
+
+    build.dependsOn(shadowJar)
+  }
+
+  repositories {
+    mavenCentral()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  plugins.withType(JavaPlugin) {
+    sourceCompatibility = 1.8
+    dependencies {
+      // dependency defined in product_spec.json
+      testCompile deps.external.testng
+    }
+
+    test {
+      useTestNG()
+    }
+  }
+
+  license {
+    header rootProject.file('license_header')
+    // Set the year in the license
+    ext.year = Calendar.getInstance().get(Calendar.YEAR)
+    skipExistingHeaders = true
+    excludes(
+      ["**/*.properties", "**/*.txt", "**/*.json", "**/*.xml"]
+    )
+  }
+  configurations {
+    hadoopRuntime.extendsFrom(runtime)
+  }
+
+  checkstyle {
+    configDir rootProject.file('ligradle/checkstyle')
+    configFile rootProject.file(new File(configDir.path, 'linkedin-checkstyle.xml'))
+    maxWarnings 0
+  }
+
+  tasks.withType(FindBugs) {
+    reports {
+      xml.enabled false
+      html.enabled true
+    }
+
+    classpath = classpath.filter {
+      // POM files are getting included in the classpath for some reason, but this causes parsing errors when FindBugs
+      // tries to analyze them, thinking they are zips. Excluding POM files as a workaround.
+      !it.name.endsWith('.pom')
+    }
+
+    excludeFilter = rootProject.file('ligradle/findbugs/findbugsExclude.xml')
+  }
+}
+
+apply plugin: 'distribution'
+
+// Generates a closure which is used to set up the contents
+// for a distribution; parametrized by the name of the
+// configuration to include in the lib directory.
+def generateDistContents(configurationName) {
+  return {
+    into('.') {
+      from rootProject.fileTree('.') {
+        include 'README.md'
+        include 'LICENSE'
+        include 'NOTICE'
+        include 'CONTRIBUTING.md'
+      }
+    }
+    into('bin') {
+      def bashFiles = []
+      rootProject.subprojects.each {
+        bashFiles << it.fileTree("src/main/bash") {
+          include "*.sh"
+        }
+      }
+      from bashFiles
+    }
+    into('lib') {
+      def dependencies = files()
+      def jars = []
+      rootProject.subprojects.each {
+        // Use subtraction to eliminate duplicates
+        dependencies = dependencies + (it.configurations[configurationName] - dependencies)
+        jars << it.jar
+      }
+      from dependencies
+      from jars
+    }
+  }
+}
+
+distributions {
+  // main distribution does not include Hadoop JARs; this is the one
+  // typically expected to be used on a system properly set up with
+  // an existing Hadoop installation.
+  main {
+    baseName = rootProject.name
+    contents generateDistContents('hadoopRuntime')
+  }
+  // fat distribution includes all dependencies.
+  fat {
+    baseName = rootProject.name + '-fat'
+    contents generateDistContents('runtime')
+  }
+}
+if (project.hasProperty('overrideBuildEnvironment')) {
+  apply from: project.overrideBuildEnvironment
+}
+
+build.dependsOn(distZip)
+

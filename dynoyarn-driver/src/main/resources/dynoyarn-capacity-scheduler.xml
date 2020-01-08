@@ -1,0 +1,94 @@
+<!--
+  Copyright 2020 LinkedIn Corporation. All rights reserved. Licensed under the BSD-2 Clause license.
+  See LICENSE in the project root for license information.
+-->
+<configuration>
+  <property>
+    <name>yarn.scheduler.capacity.maximum-applications</name>
+    <value>20000</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.maximum-am-resource-percent</name>
+    <value>0.1</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.node-locality-delay</name>
+    <value>1</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.queue-mappings-override.enable</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.resource-calculator</name>
+    <value>org.apache.hadoop.yarn.util.resource.DominantResourceCalculator</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.priority-mappings-override.enable</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.acl_administer_queue</name>
+    <value>Dr.Who </value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.queues</name>
+    <value>default,marathon</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.capacity</name>
+    <value>50.0</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.maximum-capacity</name>
+    <value>50.0</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.user-limit-factor</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.minimum-user-limit-percent</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.state</name>
+    <value>RUNNING</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.acl_submit_applications</name>
+    <value>*</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.default.acl_administer_queue</name>
+    <value>Dr.Who </value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.capacity</name>
+    <value>50.0</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.maximum-capacity</name>
+    <value>50.0</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.user-limit-factor</name>
+    <value>1</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.minimum-user-limit-percent</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.state</name>
+    <value>RUNNING</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.acl_submit_applications</name>
+    <value>*</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.capacity.root.marathon.acl_administer_queue</name>
+    <value>Dr.Who </value>
+  </property>
+</configuration>

@@ -1,0 +1,49 @@
+apply plugin: 'java'
+apply from: 'src/main/gradle/workflows.gradle'
+
+dependencies {
+  compile(project(':dynoyarn-common'))
+  compile(project(path: ':dynoyarn-driver'))
+  compile(project(path: ':dynoyarn-generator'))
+
+  compile deps.hadoop.'hadoop-common'
+  compile(deps.'virtual-hadoop'.'hadoop-yarn-server-tests') { transitive = false }
+  compileOnly(deps.external.'azkaban-common') { transitive = false }
+
+  compileOnly deps.external.log4j
+}
+
+// Specify what goes into the Hadoop zip
+hadoopZip {
+  libPath = "lib"
+  base {
+    // Add extra brackets for lazy evaluation of the azkaban folder
+    from { fileTree("azkaban").exclude("grids").files } {
+      into "."
+    }
+  }
+  zip("azkabanCluster") {
+    // Add extra brackets for lazy evaluation of the azkaban folder
+    from { fileTree("azkaban/grids/cluster").files } {
+      into "."
+    }
+    from { fileTree("src/main/resources").files } {
+      into "."
+    }
+  }
+}
+
+// The build depends on the Hadoop zips, which depends on compiling the Hadoop DSL
+startHadoopZips.dependsOn buildAzkabanFlows
+build.dependsOn buildHadoopZips
+
+// Exclude dependencies that are already on the grid from the Hadoop zip
+configurations.hadoopRuntime {
+  // We *include* hadoop jars here since we need the hadoop-yarn-server-tests-2.10.0.*-tests.jar.
+  exclude group: 'com.linkedin.hive'
+  exclude group: 'com.linkedin.pig'
+  exclude group: 'com.linkedin.spark'
+  exclude group: 'org.apache.hive'
+  exclude group: 'org.apache.pig'
+  exclude group: 'org.apache.spark'
+}

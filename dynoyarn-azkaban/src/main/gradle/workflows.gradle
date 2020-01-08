@@ -1,0 +1,131 @@
+// Provide a default definition set. Defines things such as your home directory and headless user.
+definitionSet defs: [
+  failureEmail: "no-reply@linkedin.com",
+  homeDir: "/jobs/dyno",
+  userToProxy: "dyno"
+]
+
+definitionSet name: 'cluster', defs: [:]
+
+// Override any properties in the above definition set in your own profile script. We suggest
+// keeping profile scripts in source control, but your team might add them to .gitignore instead.
+applyProfile from: "${project.projectDir}/src/main/profiles/${System.properties['user.name']}.gradle"
+
+def classpath = "./lib/*:."
+def homeDir = lookupDef('homeDir')
+def baseDir = "${homeDir}/dynoyarn-${System.properties['user.name']}"
+def rmLogOutputPath = "${baseDir}/rm-log-output"
+// Timestamp to start the workload at.
+def workloadStartTime = 1607148387000
+// How long the simulation should run for, in ms.
+def simulationDuration = 600000
+
+hadoopClosure closure: {
+  namespace(definitionSetName()) {
+    propertyFile('common') {
+      set properties: [
+        'failure.emails': lookupDef('failureEmail'),
+        'user.to.proxy': lookupDef('userToProxy')
+      ]
+    }
+
+    propertyFile('dynoyarn') {
+      set properties: [
+        'dynoyarn.workload.app-priority'                       : '1',
+        'dynoyarn.nodemanager.memory'                          : '50g',
+        'dynoyarn.nodemanager.instances-per-container'         : '30',
+        'dynoyarn.workload.am.memory'                          : '8192',
+        'dynoyarn.workload.apps-per-container'                 : '1000',
+        'dynoyarn.app-submitter.memory'                        : '49152',
+        'dynoyarn.app-submitter.vcores'                        : '20'
+      ]
+    }
+
+    propertyFile('dynoyarn-site') {
+      set properties: [
+        // Configurations for dynoyarn RM/NMs
+        'hadoop.tmp.dir'                                               : '$baseDir',
+        'hadoop.security.authentication'                               : 'simple',
+        'hadoop.security.authorization'                                : 'false',
+        'hadoop.security.impersonation.provider.class'                 : 'com.linkedin.dynoyarn.AllowAllImpersonationProvider',
+        'hadoop.http.authentication.type'                              : 'simple',
+        'yarn.resourcemanager.scheduler.address'                       : '$rmHost:$baseSchedulerPort',
+        'yarn.resourcemanager.address'                                 : '$rmHost:$baseServiceRpcPort',
+        'yarn.resourcemanager.admin.address'                           : '$rmHost:$baseAdminPort',
+        'yarn.resourcemanager.resource-tracker.address'                : '$rmHost:$baseTrackerPort',
+        'yarn.resourcemanager.webapp.address'                          : '$rmHost:$baseHttpPort',
+        'yarn.resourcemanager.leveldb-state-store.path'                : '$baseDir/rm-state-store',
+        'yarn.scheduler.configuration.leveldb-store.path'              : '$baseDir/conf-store',
+        'yarn.resourcemanager.nodes.include-path'                      : '',
+        'yarn.resourcemanager.nodes.exclude-path'                      : '',
+        'yarn.resourcemanager.scheduler.default.routing.queue'         : 'default',
+        'yarn.node-labels.fs-store.root-dir'                           : 'file://$baseDir/node-labels',
+        'yarn.scheduler.capacity.config.path'                          : '$baseDir/dcs',
+        'yarn.nodemanager.address'                                     : '0.0.0.0:$nm_port',
+        'yarn.nodemanager.localizer.address'                           : '0.0.0.0:$nm_localizer_port',
+        'yarn.nodemanager.webapp.address'                              : '0.0.0.0:0',
+        'yarn.nodemanager.webapp.https.address'                        : '0.0.0.0:0',
+        'yarn.nodemanager.recovery.enabled'                            : 'false',
+        'yarn.nodemanager.recovery.dir'                                : '$baseDir/nm-state-store-$containerID',
+        'yarn.nodemanager.aux-services'                                : '',
+        'yarn.nodemanager.health-checker.script.path'                  : '',
+        'yarn.nodemanager.disk-health-checker.enable'                  : 'false',
+        'yarn.nodemanager.container-executor.class'                    : 'org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor',
+        'yarn.nodemanager.container-monitor.process-tree.class'        : 'com.linkedin.dynoyarn.workload.simulation.DynoYARNBasedProcessTree',
+        'yarn.nodemanager.local-dirs'                                  : 'file://$baseDir/yarn',
+        'yarn.nodemanager.log-dirs'                                    : 'file://$baseDir/userlogs',
+        'yarn.nodemanager.delete.debug-delay-sec'                      : '10000',
+        'yarn.nodemanager.resource.cpu-vcores'                         : '70',
+        'yarn.nodemanager.resource.memory-mb'                          : '249856',
+        'yarn.nodemanager.container-manager.thread-count'              : '5',
+        'yarn.nodemanager.containers-launcher.class'                   : 'com.linkedin.dynoyarn.FakeContainersLauncher',
+        'yarn.minicluster.yarn.nodemanager.resource.memory-mb'         : '249856',
+        'yarn.minicluster.use-rpc'                                     : 'true',
+        'yarn.minicluster.fixed.ports'                                 : 'true',
+        'yarn.log-aggregation-enable'                                  : 'false',
+        'yarn.resourcemanager.monitor.capacity.elasticity.observe_only': 'false',
+        'yarn.resourcemanager.scheduler.monitor.policies'              : 'org.apache.hadoop.yarn.server.resourcemanager.monitor.capacity.ProportionalCapacityPreemptionPolicy'
+      ]
+    }
+  }
+}
+
+hadoop {
+  buildPath "azkaban"
+
+  // Create a namespace to hold grid-specific files and evaluate the hadoopClosures for each
+  // grid-specific definition set
+  namespace('grids') {
+    evalHadoopClosures defs: 'cluster'
+  }
+
+  def workloadTraceLocation = "${baseDir}/dynoyarn-workload-abridged.json"
+
+  workflow('dynoyarn-runner') {
+    hadoopJavaJob('dynoyarn-azkaban-runner') {
+      uses 'com.linkedin.dynoyarn.DynoYARNAzkabanRunner'
+      jvmClasspath classpath
+
+      set properties: [
+        // Driver properties
+        'hadoop-binary-path': '/hdfs/path/to/hadoop.tarball.tar.gz',
+        'capacity-scheduler-conf-path': "/hdfs/path/to/capacity-scheduler.xml",
+
+        // Workload properties
+        'workload-spec-path': "${workloadTraceLocation}",
+        'simulated-fatjar-path': "${baseDir}/dynoyarn-generator-${project.version}-all.jar",
+
+        // Dynoyarn tuning parameters
+        'dynoyarn.workload.multiplier'                         : '1',
+        'dynoyarn.nodemanager.instances'                       : '600',
+        'dynoyarn.resourcemanager.memory'                      : '32g',
+        'dynoyarn.workload.start-time'                         : "${workloadStartTime}",
+        'dynoyarn.resourcemanager.node-label'                  : 'dyno',
+        'dynoyarn.driver.rm-log-output-path'                   : "${rmLogOutputPath}",
+        'dynoyarn.driver.simulation-duration-ms'               : "${simulationDuration}"
+      ]
+    }
+
+    targets 'dynoyarn-azkaban-runner'
+  }
+}

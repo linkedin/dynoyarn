@@ -1,0 +1,20 @@
+dependencies {
+  compileOnly(deps.external.'azkaban-common') { transitive = false }
+  compileOnly deps.hadoop.'hadoop-common'
+  compileOnly deps.hadoop.'hadoop-hdfs'
+  compile deps.hadoop.'hadoop-yarn-api'
+  compileOnly deps.hadoop.'hadoop-yarn-client'
+  compile deps.hadoop.'hadoop-yarn-common'
+  compileOnly deps.hadoop.'hadoop-yarn-server-nodemanager'
+  compileOnly deps.hadoop.'hadoop-yarn-server-resourcemanager'
+  compile(deps.'virtual-hadoop'.'hadoop-yarn-server-tests') { transitive = false }
+  compile(project(':dynoyarn-common')) { transitive = false }
+  compile(project(':dynoyarn-generator')) { transitive = false }
+
+  testCompile deps.hadoop.'hadoop-common'
+  testCompile deps.hadoop.'hadoop-yarn-client'
+  testCompile deps.hadoop.'hadoop-yarn-server-nodemanager'
+  testCompile deps.external.mockito
+  testCompile deps.external.testng
+}
+

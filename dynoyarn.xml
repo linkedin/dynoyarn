@@ -1,0 +1,113 @@
+<configuration>
+  <property>
+    <name>dynoyarn.resourcemanager.memory</name>
+    <value>16g</value>
+    <description>Memory size of simulated resource manager container.</description>
+  </property>
+  <property>
+    <name>dynoyarn.nodemanager.instances-per-container</name>
+    <value>30</value>
+    <description>Number of node managers per container.</description>
+  </property>
+  <property>
+    <name>dynoyarn.nodemanager.memory</name>
+    <value>50g</value>
+    <description>Memory size of simulated node manager containers.</description>
+  </property>
+  <property>
+    <name>dynoyarn.nodemanager.instances</name>
+    <value>600</value>
+    <description>Number of node managers for the simulated cluster.</description>
+  </property>
+  <property>
+    <name>dynoyarn.resourcemanager.node-label</name>
+    <value>dynorm</value>
+    <description>
+      Node label for simulated resource manager container. To guarantee the RM is placed
+      on the same node on each simulation iteration, this node label should only contain one node.
+    </description>
+  </property>
+  <property>
+    <name>dynoyarn.driver.node-label</name>
+    <value></value>
+    <description>Node label for simulated node manager containers.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.start-time</name>
+    <value>1607151674543</value>
+    <description>Epoch to start the trace replay from. For example, if the trace contains
+    app_1 with submit time 1000, app_2 with submit time 2000, and app_3 with submit time 3000, and this
+    config is set to 2000, the simulation will start by submitting app_2 (then app_3 a second later).
+    This is useful if you have a large trace file but want to start replaying somewhere in the middle.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.am.memory</name>
+    <value>8192</value>
+    <description>Memory size of the workload application's AM, in MB.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.apps-per-container</name>
+    <value>1000</value>
+    <description>
+      The number of apps submitted from each workload container. Each submitted application
+      spawns a separate thread. Therefore, use this config to tune the number of threads per
+      container.
+    </description>
+  </property>
+  <property>
+    <name>dynoyarn.app-submitter.memory</name>
+    <value>49152</value>
+    <description>Memory size (in MB) of each workload container.</description>
+  </property>
+  <property>
+    <name>dynoyarn.app-submitter.vcores</name>
+    <value>20</value>
+    <description>Vcores of each workload container.</description>
+  </property>
+  <property>
+    <name>dynoyarn.driver.queue</name>
+    <value>default</value>
+    <description>Queue which the driver application is submitted to.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.queue</name>
+    <value>default</value>
+    <description>Queue which the workload application is submitted to.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.app-priority</name>
+    <value>1</value>
+    <description>
+      Application priority of the workload application. If running the simulation in a multi-tenant
+      environment, it's useful to submit the workload application with high priority, since simulated
+      applications need to run in a timely manner to accurately simulate the trace submission times.
+    </description>
+  </property>
+  <property>
+    <name>dynoyarn.driver.simulation-duration-ms</name>
+    <value>600000</value>
+    <description>Time, in ms, of how long the simulation should run before terminating.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.node-label-expression</name>
+    <value></value>
+    <description>Node label which the workload application should be submitted with.</description>
+  </property>
+  <property>
+    <name>dynoyarn.workload.multiplier</name>
+    <value>1</value>
+    <description>
+      Multiplier for scaling up a workload to stress test the resource manager.
+      For example, setting this to 1.5 will submit each application in the trace once, plus a
+      second time with 50% probability. Setting this to 2 will submit each application in the
+      trace twice.
+    </description>
+  </property>
+  <property>
+    <name>dynoyarn.driver.rm-log-output-path</name>
+    <value>/tmp/dynoyarn-rm-logs</value>
+    <description>
+      Path on HDFS to where RM app summary and GC logs will be uploaded.
+    </description>
+  </property>
+</configuration>

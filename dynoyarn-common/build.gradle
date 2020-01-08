@@ -1,0 +1,11 @@
+dependencies {
+  compile deps.hadoop.'hadoop-common'
+  compile deps.hadoop.'hadoop-hdfs'
+  compile deps.hadoop.'hadoop-yarn-api'
+  compile deps.hadoop.'hadoop-yarn-client'
+  compile deps.hadoop.'hadoop-yarn-common'
+
+  testCompile deps.hadoop.'hadoop-common'
+  testCompile deps.external.mockito
+  testCompile deps.external.testng
+}
