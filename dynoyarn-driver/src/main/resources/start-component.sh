@@ -145,6 +145,14 @@ read -r -d '' driverConfigs <<EOF
   $@
 EOF
 
+# When mesher will start node manager, it will download the simulatedfatjar and then put it on the /tmp folder
+# When dynoyarn generator run its container, it doesn't need to download simulatedfatjar itself.
+# Reason we did this is that, dynoyarn generator will run a container without security check, therefore,
+# dynoyarn generator container can't download a file from a security cluster.
+if [ "$component" = "NODE_MANAGER" ]; then
+  rm -f /tmp/simulatedfatjar.jar
+  cp `pwd`/simulatedfatjar.jar /tmp/simulatedfatjar.jar
+
 if [ "$component" = "NODE_MANAGER" ]; then
   HADOOP_LOG_DIR=$logDir HADOOP_CLIENT_OPTS=$HADOOP_CLIENT_OPTS $hadoopHome/bin/hadoop com.linkedin.dynoyarn.SimulatedNodeManagers $driverConfigs $nmCount
   echo nodemanager

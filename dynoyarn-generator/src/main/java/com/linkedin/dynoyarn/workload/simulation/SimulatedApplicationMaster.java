@@ -120,8 +120,10 @@ public class SimulatedApplicationMaster {
     InputStream inputStream = fs.open(new Path(clusterSpecLocation));
     String out = IOUtils.toString(inputStream);
     ClusterInfo cluster = new ObjectMapper().readValue(out, ClusterInfo.class);
-    rmEndpoint = cluster.getRmHost() + ":" + cluster.getRmPort();
-    amEndpoint = cluster.getRmHost() + ":" + cluster.getRmSchedulerPort();
+    //rmEndpoint = cluster.getRmHost() + ":" + cluster.getRmPort();
+    //amEndpoint = cluster.getRmHost() + ":" + cluster.getRmSchedulerPort();
+    rmEndpoint = System.getenv("rmEndPoint");
+    amEndpoint = System.getenv("schedulerEndPoint"); // should be schedulerEndPoint, amEndpoint.
     conf.set(YarnConfiguration.RM_ADDRESS, rmEndpoint);
     conf.set(YarnConfiguration.RM_SCHEDULER_ADDRESS, amEndpoint);
     // Set NM/RM max-wait to respective intervals, so that the underlying ipc.Client only retries once.

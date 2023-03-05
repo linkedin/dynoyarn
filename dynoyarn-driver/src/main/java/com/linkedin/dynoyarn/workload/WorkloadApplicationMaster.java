@@ -469,6 +469,7 @@ public class WorkloadApplicationMaster {
       containerShellEnv.put(Constants.SIMULATED_FATJAR_NAME, System.getenv(Constants.SIMULATED_FATJAR_NAME));
       containerShellEnv.put("HDFS_CLASSPATH", System.getenv("HDFS_CLASSPATH"));
       containerShellEnv.put(Constants.DYARN_CONF_NAME, System.getenv(Constants.DYARN_CONF_NAME));
+      containerShellEnv.put("driverAppId", System.getenv("driverAppId"));
       try (PrintWriter out = new PrintWriter(Constants.SPEC_FILE, "UTF-8")) {
         String spec = new ObjectMapper().writeValueAsString(containerAppSpecs)
             .replaceAll("\"", "'");
