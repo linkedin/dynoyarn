@@ -123,6 +123,7 @@ if [ "$component" = "RESOURCE_MANAGER" ]; then
   cp `readlink -f dynoyarn-capacity-scheduler.xml` ${baseDir}/dcs/capacity-scheduler.xml
   rm ${confDir}/capacity-scheduler.xml
   ln -s ${baseDir}/dcs/capacity-scheduler.xml ${confDir}/capacity-scheduler.xml
+  unset APPLICATION_WEB_PROXY_BASE
 else
   rm ${hadoopHome}/etc/hadoop/container-executor.cfg
   ln -s `readlink -f dynoyarn-container-executor.cfg` ${hadoopHome}/etc/hadoop/container-executor.cfg
