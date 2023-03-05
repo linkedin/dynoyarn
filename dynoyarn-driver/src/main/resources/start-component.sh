@@ -63,7 +63,8 @@ cp *.jar $extraClasspathDir
 
 # This is where libleveldbjni is written (per-NM). Write it to a larger partition
 # instead of /tmp
-tmpdir="/grid/a/tmp/hadoop-`whoami`"
+#tmpdir="/grid/a/tmp/hadoop-`whoami`"
+tmpdir="$baseDir/tmp/hadoop-`whoami`"
 mkdir $tmpdir
 
 # Change environment variables for the Hadoop process
