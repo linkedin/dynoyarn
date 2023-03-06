@@ -66,6 +66,8 @@ public class WorkloadClient implements AutoCloseable {
   private String confPath;
   private String workloadJarPath;
 
+  private String driverAppId;
+
   private Path appResourcesPath;
 
   public static final String DRIVER_APP_ID_ARG = "driver_app_id";
@@ -159,7 +161,8 @@ public class WorkloadClient implements AutoCloseable {
     if (args.length == 0) {
       throw new IllegalArgumentException("No args specified for client to initialize");
     }
-    String driverAppId = cliParser.getOptionValue(DRIVER_APP_ID_ARG);
+    //String driverAppId = cliParser.getOptionValue(DRIVER_APP_ID_ARG);
+    driverAppId = cliParser.getOptionValue(DRIVER_APP_ID_ARG);
     workloadSpecLocation = cliParser.getOptionValue(WORKLOAD_SPEC_LOCATION_ARG);
     simulatedFatJarLocation = cliParser.getOptionValue(SIMULATED_FATJAR_ARG);
     confPath = cliParser.getOptionValue(CONF_ARG);
@@ -243,6 +246,7 @@ public class WorkloadClient implements AutoCloseable {
       classPathEnv.append(c.trim());
     }
     containerEnv.put("CLASSPATH", classPathEnv.toString());
+    containerEnv.put("driverAppId", driverAppId);
 
     // Set logs to be readable by everyone. Set app to be modifiable only by app owner.
     Map<ApplicationAccessType, String> acls = new HashMap<>(2);

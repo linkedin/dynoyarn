@@ -9,6 +9,8 @@ import com.linkedin.dynoyarn.common.Constants;
 import com.linkedin.dynoyarn.common.DynoYARNConfigurationKeys;
 import com.linkedin.dynoyarn.common.Utils;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -212,6 +214,23 @@ public class DriverClient implements AutoCloseable {
     Path containerExecutorCfg = Utils.localizeLocalResource(dyarnConf, fs, CONTAINER_EXECUTOR_CFG, LocalResourceType.FILE, appResourcesPath, localResources);
     Utils.localizeLocalResource(dyarnConf, fs, DYNOYARN_SITE_XML, LocalResourceType.FILE, appResourcesPath, localResources);
     containerEnv.put(Constants.DYARN_CONF_NAME, conf.toString());
+
+    //Try to add dynoyarn-generator resource when launch NMs
+    File cwd = new File(".");
+    File[] files = cwd.listFiles(new FilenameFilter() {
+      @Override
+      public boolean accept(File dir, String name) {
+        return name.startsWith("dynoyarn-generator");
+      }
+    });
+    if (files.length == 0) {
+      throw new FileNotFoundException("Not found dynooyarn-generator-jar");
+    }
+    Path simulateFatJarLocation = Utils.localizeLocalResource(dyarnConf, fs,
+            files[0].getPath(), LocalResourceType.FILE, appResourcesPath, localResources);
+
+    containerEnv.put(Constants.SIMULATED_FATJAR_NAME, simulateFatJarLocation.toString());
+
     containerEnv.put(Constants.DYARN_JAR_NAME, dyarnJar.toString());
     containerEnv.put(Constants.DYARN_START_SCRIPT_NAME, startScript.toString());
     containerEnv.put(Constants.CAPACITY_SCHEDULER_NAME, capacitySchedulerConfPath);

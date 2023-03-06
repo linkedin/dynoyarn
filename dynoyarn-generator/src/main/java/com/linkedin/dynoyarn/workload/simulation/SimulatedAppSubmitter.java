@@ -71,6 +71,7 @@ public class SimulatedAppSubmitter {
   private Configuration conf = new Configuration();
   private FileSystem fs;
   private String rmEndpoint;
+  private String schedulerEndPoint;
   private String clusterSpecLocation;
   private float multiplier;
   private AppSpec[] appSpecs;
@@ -111,6 +112,7 @@ public class SimulatedAppSubmitter {
     String out = IOUtils.toString(inputStream);
     ClusterInfo cluster = new ObjectMapper().readValue(out, ClusterInfo.class);
     rmEndpoint = cluster.getRmHost() + ":" + cluster.getRmPort();
+    schedulerEndPoint = cluster.getRmHost() + ":" + cluster.getRmSchedulerPort();
     conf.set(YarnConfiguration.RM_ADDRESS, rmEndpoint);
     conf.setLong(YarnConfiguration.RESOURCEMANAGER_CONNECT_MAX_WAIT_MS,
         YarnConfiguration.DEFAULT_RESOURCEMANAGER_CONNECT_RETRY_INTERVAL_MS);
@@ -267,9 +269,11 @@ public class SimulatedAppSubmitter {
     Map<String, String> containerEnv = new HashMap<>();
 
     Map<String, LocalResource> localResources = new HashMap<>();
-    Utils.localizeHDFSResource(fs, System.getenv(Constants.DYARN_JAR_NAME), Constants.DYARN_JAR, LocalResourceType.FILE, localResources);
-    Utils.localizeHDFSResource(fs, System.getenv(Constants.SIMULATED_FATJAR_NAME), Constants.SIMULATED_FATJAR, LocalResourceType.FILE, localResources);
-    Utils.localizeHDFSResource(fs, System.getenv(Constants.DYARN_CONF_NAME), Constants.DYARN_CONF_NAME, LocalResourceType.FILE, localResources);
+    //Utils.localizeHDFSResource(fs, System.getenv(Constants.DYARN_JAR_NAME), Constants.DYARN_JAR, LocalResourceType.FILE, localResources);
+    //Utils.localizeHDFSResource(fs, System.getenv(Constants.SIMULATED_FATJAR_NAME), Constants.SIMULATED_FATJAR, LocalResourceType.FILE, localResources);
+    //Utils.localizeHDFSResource(fs, System.getenv(Constants.DYARN_CONF_NAME), Constants.DYARN_CONF_NAME, LocalResourceType.FILE, localResources);
+
+    //In my case, I never use HDFS_CLASSPATH, therefore, I don't deal with this localizeHDFSResource
     String hdfsClasspath = System.getenv("HDFS_CLASSPATH");
     if (hdfsClasspath != null) {
       for (FileStatus status : fs.listStatus(new Path(hdfsClasspath))) {
@@ -278,8 +282,13 @@ public class SimulatedAppSubmitter {
       }
     }
 
+    //We need to pass those parameters, since we don't upload the Dyarn_Conf
+    containerEnv.put("schedulerEndPoint", schedulerEndPoint);
+    containerEnv.put("rmEndPoint", rmEndpoint);
     containerEnv.put(Constants.DYARN_CONF_NAME, new Path(System.getenv(Constants.DYARN_CONF_NAME)).getName());
-    containerEnv.put("CLASSPATH", "./*:$HADOOP_CONF_DIR:$HADOOP_YARN_HOME/share/hadoop/yarn/*:$HADOOP_YARN_HOME/lib/*");
+
+    //Add simulatedfatjar.jar in the classpath.
+    containerEnv.put("CLASSPATH", "./*:$HADOOP_CONF_DIR:$HADOOP_YARN_HOME/share/hadoop/yarn/*:$HADOOP_YARN_HOME/lib/*:/tmp/simulatedfatjar.jar");
     containerEnv.put(Constants.IS_AM, "true");
     containerEnv.put("HDFS_CLASSPATH", System.getenv("HDFS_CLASSPATH"));
     containerEnv.put(Constants.APP_SPEC_NAME, new ObjectMapper().writeValueAsString(appSpec)

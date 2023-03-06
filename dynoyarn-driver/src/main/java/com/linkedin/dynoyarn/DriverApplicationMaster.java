@@ -605,6 +605,9 @@ public class DriverApplicationMaster {
     Utils.localizeHDFSResource(fs, startScript, Constants.DYARN_START_SCRIPT, LocalResourceType.FILE, containerResources);
     Utils.localizeHDFSResource(fs, containerExecutorCfg, Constants.CONTAINER_EXECUTOR_CFG, LocalResourceType.FILE, containerResources);
 
+    //Try to get Dyno_Generate jar
+    Utils.localizeHDFSResource(fs, System.getenv(Constants.SIMULATED_FATJAR_NAME), Constants.SIMULATED_FATJAR, LocalResourceType.FILE, containerResources);
+
     String hdfsClasspath = System.getenv("HDFS_CLASSPATH");
     for (FileStatus status : fs.listStatus(new Path(hdfsClasspath))) {
       Utils.localizeHDFSResource(fs, status.getPath().toString(), status.getPath().getName(), LocalResourceType.FILE, containerResources);
